@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GroundChecker : MonoBehaviour
@@ -40,8 +38,8 @@ public class GroundChecker : MonoBehaviour
         foreach (ContactPoint contact in other.contacts)
         {
             Normal = contact.normal;
-            if (IsFloor(Normal)) {grounded = true; resetGround = false;}
-            if (IsWall(Normal)) {walled = true; resetWall = false;}
+            if (IsFloor(Normal)) { grounded = true; resetGround = false; }
+            if (IsWall(Normal)) { walled = true; resetWall = false; }
             //Debug.DrawRay(contact.point, contact.normal, Color.white);
         }
     }

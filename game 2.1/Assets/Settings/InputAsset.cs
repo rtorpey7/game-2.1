@@ -89,6 +89,15 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Boost"",
+                    ""type"": ""Button"",
+                    ""id"": ""d2d6b97b-ba3b-4b50-b4eb-bbb3d02df14a"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -212,6 +221,17 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
                     ""action"": ""Movement"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ed1ab6e6-307f-4a30-bbe5-326f8eaa9793"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": ""Press(behavior=2)"",
+                    ""processors"": """",
+                    ""groups"": ""Player"",
+                    ""action"": ""Boost"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -244,6 +264,7 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
         m_InGame_Movement = m_InGame.FindAction("Movement", throwIfNotFound: true);
         m_InGame_LeftMouse = m_InGame.FindAction("LeftMouse", throwIfNotFound: true);
         m_InGame_RightMouse = m_InGame.FindAction("RightMouse", throwIfNotFound: true);
+        m_InGame_Boost = m_InGame.FindAction("Boost", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -310,6 +331,7 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
     private readonly InputAction m_InGame_Movement;
     private readonly InputAction m_InGame_LeftMouse;
     private readonly InputAction m_InGame_RightMouse;
+    private readonly InputAction m_InGame_Boost;
     public struct InGameActions
     {
         private @InputAsset m_Wrapper;
@@ -321,6 +343,7 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
         public InputAction @Movement => m_Wrapper.m_InGame_Movement;
         public InputAction @LeftMouse => m_Wrapper.m_InGame_LeftMouse;
         public InputAction @RightMouse => m_Wrapper.m_InGame_RightMouse;
+        public InputAction @Boost => m_Wrapper.m_InGame_Boost;
         public InputActionMap Get() { return m_Wrapper.m_InGame; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -351,6 +374,9 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
                 @RightMouse.started -= m_Wrapper.m_InGameActionsCallbackInterface.OnRightMouse;
                 @RightMouse.performed -= m_Wrapper.m_InGameActionsCallbackInterface.OnRightMouse;
                 @RightMouse.canceled -= m_Wrapper.m_InGameActionsCallbackInterface.OnRightMouse;
+                @Boost.started -= m_Wrapper.m_InGameActionsCallbackInterface.OnBoost;
+                @Boost.performed -= m_Wrapper.m_InGameActionsCallbackInterface.OnBoost;
+                @Boost.canceled -= m_Wrapper.m_InGameActionsCallbackInterface.OnBoost;
             }
             m_Wrapper.m_InGameActionsCallbackInterface = instance;
             if (instance != null)
@@ -376,6 +402,9 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
                 @RightMouse.started += instance.OnRightMouse;
                 @RightMouse.performed += instance.OnRightMouse;
                 @RightMouse.canceled += instance.OnRightMouse;
+                @Boost.started += instance.OnBoost;
+                @Boost.performed += instance.OnBoost;
+                @Boost.canceled += instance.OnBoost;
             }
         }
     }
@@ -398,5 +427,6 @@ public partial class @InputAsset : IInputActionCollection2, IDisposable
         void OnMovement(InputAction.CallbackContext context);
         void OnLeftMouse(InputAction.CallbackContext context);
         void OnRightMouse(InputAction.CallbackContext context);
+        void OnBoost(InputAction.CallbackContext context);
     }
 }
