@@ -1224,7 +1224,7 @@ MonoBehaviour:
   physics: {fileID: 561586266}
   eyes: {fileID: 1432802142}
   gravity: {fileID: 561586272}
-  walkSpeed: 15
+  walkSpeed: 10
   sprintFactor: 2
   accTime: 0.2
   jumpHeight: 5
@@ -4438,8 +4438,8 @@ Camera:
   m_GameObject: {fileID: 996831923}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.26415092, g: 0.26415092, b: 0.26415092, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -4787,8 +4787,8 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a36f21a160c27a2419f6f83d5b3aac83, type: 2}
-  - {fileID: 2100000, guid: b0801c13c52d6ae48b1d5df3480248d4, type: 2}
+  - {fileID: 2100000, guid: dcac45cee14202c48b22328ed6fde564, type: 2}
+  - {fileID: 2100000, guid: dcac45cee14202c48b22328ed6fde564, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4827,7 +4827,7 @@ Transform:
   m_GameObject: {fileID: 1275183612}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.2786939, y: 0.14323878, z: 0.17837429}
-  m_LocalScale: {x: 100, y: 1, z: 100}
+  m_LocalScale: {x: 100, y: 1, z: 296.91}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 249702095}
@@ -6118,7 +6118,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh28828
+  m_Name: pb_Mesh28834
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -6491,7 +6491,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &2138677392
 Light:
   m_ObjectHideFlags: 0

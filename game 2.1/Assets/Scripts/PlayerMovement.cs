@@ -91,8 +91,9 @@ public class PlayerMovement : MonoBehaviour
 	private bool grounded = true;
 	//boolean representign whether or not we are moving faster than the maximum speed.
 	private bool speeding = false;
-	//representing our momentum when above the sprint speed
-	private Vector2 momentum = new Vector2(0, 0);
+	//temporary variable for testing
+	private bool Boost = false;
+	private bool justBoosted = false;
 	#endregion
 	/*Different State Values:
 	 * 
@@ -137,53 +138,41 @@ public class PlayerMovement : MonoBehaviour
 	}
     private void Move()
     {
-        // using our player rotate right and forward, as well as our input values, create a movement vector called velGoal
-        Vector3 xMove = input.movement.x * transform.right * walkSpeed;
-		Vector3 zMove = input.movement.y * transform.forward * walkSpeed;
-
-        if (crouching) { xMove *= crouchSpeedFactor; zMove *= crouchSpeedFactor; }
-        else if (input.sprint && input.movement.y > 0) { xMove *= sprintFactor * speedMultiplier; zMove *= sprintFactor * speedMultiplier;}
-
-        Vector2 velGoal = new Vector2(xMove.x + zMove.x, xMove.z + zMove.z);
 		Vector2 curVel = new Vector2(physics.velocity.x, physics.velocity.z);
+		Vector3 moveTemp = input.movement.x * transform.right + input.movement.y * transform.forward;
+		Vector2 move = (new Vector2(moveTemp.x, moveTemp.z)).normalized;
 
-        //changes acceleration based on speed
-        float moveAcc = walkAcc;
-        if (curVel.magnitude > walkSpeed) { moveAcc *= (curVel.magnitude / walkSpeed) * (curVel.magnitude / walkSpeed); }
-
-        //if the change between our current velocity and the velocity we want to go is smaller than the update we are about to do to it
-        if ((velGoal - curVel).magnitude <= walkAcc * Time.fixedDeltaTime)
+		float maxVel = walkSpeed;
+		if (crouching && grounded) maxVel *= crouchSpeedFactor;
+		if (input.sprint) maxVel *= sprintFactor;
+		//if we have momentum, we have to calculate our max speed differently
+		if (speeding) 
 		{
-			//make our velocity directly equal to the goal velcoity. this makes it so that we dont overshoot the velocity
-			physics.velocity = new Vector3(velGoal.x, physics.velocity.y, velGoal.y);
+			//We only keep our momentum if we are traveling in the direction of our momentum.
+			if (Vector3.Dot(move, curVel) / curVel.magnitude > 0) 
+			{
+				maxVel = Vector3.Dot(move.normalized * curVel.magnitude, curVel) / curVel.magnitude;
+			}
 		}
-		else
+		float acceleration = walkAcc;
+		if (input.sprint && !crouching) acceleration = sprintAcc;
+		//if we have momentum, acceleration is calculated differently
+		if (speeding)
 		{
-			//change our velocity based on our walk acceleration value
-			Vector2 step = (velGoal - curVel).normalized * walkAcc * Time.fixedDeltaTime;
-			physics.velocity = new Vector3(physics.velocity.x + step.x, physics.velocity.y, physics.velocity.z + step.y);
+			
 		}
-		/* old Code
-		// using our player rotate right and forward, as weel as our input values, create a movement vector called velGoal
-		Vector3 xMove = input.movement.x * transform.right * walkSpeed;
-		Vector3 zMove = input.movement.y * transform.forward * walkSpeed;
-		if (crouching && grounded) { xMove *= crouchSpeedFactor; zMove *= crouchSpeedFactor; }
-		if (input.sprint) { xMove *= sprintFactor; zMove *= sprintFactor; }
-		Vector2 velGoal = new Vector2(xMove.x + zMove.x, xMove.z + zMove.z);
-		Vector2 curVel = new Vector2(physics.velocity.x, physics.velocity.z);
-		//if the change between ourt current velocity and teh velocitry we want to go is smaller than the update we are about to do to it
-		if ((velGoal - curVel).magnitude <= walkAcc * Time.fixedDeltaTime * sprintFactor)
+		move *= maxVel;
+		Vector2 step = move - curVel;
+		Vector2 curStep = step.normalized;
+		curStep *= acceleration * Time.fixedDeltaTime;
+		if (step.magnitude < curStep.magnitude)
 		{
-			//make our velocity direcyly equal to the goal velcoity. this makes it so that we dont overshoot the velocity
-			physics.velocity = new Vector3(velGoal.x, physics.velocity.y, velGoal.y);
+			physics.velocity = new Vector3(move.x, physics.velocity.y, move.y);
 		}
-		else
+		else 
 		{
-			//change our velocity based on our walk accelleration value
-			Vector2 step = (velGoal - curVel).normalized * walkAcc * Time.fixedDeltaTime * sprintFactor;
-			physics.velocity = new Vector3(physics.velocity.x + step.x, physics.velocity.y, physics.velocity.z + step.y);
+			physics.velocity = new Vector3(physics.velocity.x + curStep.x, physics.velocity.y, physics.velocity.z + curStep.y);
 		}
-		*/
 	}
 	private void Jump()
 	{
@@ -291,22 +280,36 @@ public class PlayerMovement : MonoBehaviour
 				break;
 		}
 	}
-	private void FixedUpdate()
+	private void boost() 
+	{
+		if (justBoosted) 
+		{
+			physics.velocity += transform.forward * 20;
+			justBoosted = false;
+		}
+	}
+	void FixedUpdate()
 	{
 		grounded = groundCheck.grounded;
+		boost();
 		Move();
 		Jump();
 		Crouch();
 		Slide();
-		if ((new Vector2(physics.velocity.x, physics.velocity.z)).magnitude > sprintSpeed)
+		speeding = false;
+		if ((new Vector2(physics.velocity.x, physics.velocity.z)).magnitude > sprintSpeed + 1)
 		{
 			speeding = true;
-			momentum = new Vector3(physics.velocity.x, physics.velocity.y, physics.velocity.z);
 		}
 	}
 	void Boosted()
 	{
-		physics.velocity = physics.velocity + transform.forward * 100;
+		justBoosted = true;
+		Boost = true;
+	}
+	void BoostReleased()
+	{
+		Boost = false;
 	}
 	void Jumped()
 	{
