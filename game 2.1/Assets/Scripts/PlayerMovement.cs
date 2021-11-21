@@ -112,7 +112,7 @@ public class PlayerMovement : MonoBehaviour
 	 * 2 - in stage 1 of the jump, waiting for velocity to go to zero before going to state 3
 	 * 3 - reached the second stage of the jump, already set the gravity to downGrav, waiting to touch the ground. when we do, we sert the gravity to standardGrav, and go to state 0
 	 * if at anypoint duriong these states, the spacebar is released, gravity is set to standard, and state is set to 0
-	 */
+	 */ 
 	private void Awake()
     {
 		//jump math
