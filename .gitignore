@@ -2,15 +2,15 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
 #
-/game2.1/Library/
-/game2.1/Temp/
-/game2.1/obj/
-/game2.1/Build/
-/game2.1/Builds/
-/game2.1/Logs/
-/game2.1/MemoryCaptures/
-/game2.1/UserSettings/
-/game2.1/Packages/
+/Library/
+/Temp/
+/obj/
+/Build/
+/Builds/
+/Logs/
+/MemoryCaptures/
+/UserSettings/
+/Packages/
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
