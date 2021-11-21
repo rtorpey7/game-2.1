@@ -17,10 +17,10 @@ public class CameraRotation : MonoBehaviour
     }
     void Update()
     {
-        yrot -= input.mouseDelta.y * Time.fixedDeltaTime * yRotSpeed;
+        yrot -= input.mouseDelta.y * Time.deltaTime * yRotSpeed;
         yrot = Mathf.Clamp(yrot, -70, 80);
         cameraAnchor.localRotation = Quaternion.Euler(yrot, 0, 0);
-        xrot = input.mouseDelta.x * xRotSpeed * Time.fixedDeltaTime;
+        xrot = input.mouseDelta.x * xRotSpeed * Time.deltaTime;
         transform.rotation *= Quaternion.Euler(0, xrot, 0);
     }
 }

@@ -31,7 +31,6 @@ public class PlayerMovement : MonoBehaviour
 	private float sprintSpeed;
     //constant to multiply sprint speed by to keep momentum
     private float speedMultiplier;
-
 	[Header("Jump Values")]
 	//height attained when jumping
 	public float jumpHeight;
@@ -83,13 +82,19 @@ public class PlayerMovement : MonoBehaviour
 	//velocity to use when vaulting an object
 	public float vaultVelocity;
 	//boolean representing whether or not we are currently crouching.
-	private bool crouching = false, sprinting = false;
+	private bool crouching = false;
+	//boolean representing whether or not we are currently sliding
+	private bool sliding = false;
 	//integers used to determine what state we are in.
 	private int crouchState, slideState, vaultState, jumpState;
 	//local boolean repesenting the grounded state of the player
 	private bool grounded = true;
-    #endregion
-    /*Different State Values:
+	//boolean representign whether or not we are moving faster than the maximum speed.
+	private bool speeding = false;
+	//representing our momentum when above the sprint speed
+	private Vector2 momentum = new Vector2(0, 0);
+	#endregion
+	/*Different State Values:
 	 * 
 	 * crouch:
 	 * 0 - not crouching
@@ -107,8 +112,8 @@ public class PlayerMovement : MonoBehaviour
 	 * 2 - in stage 1 of the jump, waiting for velocity to go to zero before going to state 3
 	 * 3 - reached the second stage of the jump, already set the gravity to downGrav, waiting to touch the ground. when we do, we sert the gravity to standardGrav, and go to state 0
 	 * if at anypoint duriong these states, the spacebar is released, gravity is set to standard, and state is set to 0
-	 */
-    private void Awake()
+	 */ 
+	private void Awake()
     {
 		//jump math
 		//this math is really complicated to derive but its right, so just leave it
@@ -137,7 +142,7 @@ public class PlayerMovement : MonoBehaviour
 		Vector3 zMove = input.movement.y * transform.forward * walkSpeed;
 
         if (crouching) { xMove *= crouchSpeedFactor; zMove *= crouchSpeedFactor; }
-        else if (sprinting && input.movement.y > 0) { xMove *= sprintFactor * speedMultiplier; zMove *= sprintFactor * speedMultiplier;}
+        else if (input.sprint && input.movement.y > 0) { xMove *= sprintFactor * speedMultiplier; zMove *= sprintFactor * speedMultiplier;}
 
         Vector2 velGoal = new Vector2(xMove.x + zMove.x, xMove.z + zMove.z);
 		Vector2 curVel = new Vector2(physics.velocity.x, physics.velocity.z);
@@ -158,8 +163,29 @@ public class PlayerMovement : MonoBehaviour
 			Vector2 step = (velGoal - curVel).normalized * walkAcc * Time.fixedDeltaTime;
 			physics.velocity = new Vector3(physics.velocity.x + step.x, physics.velocity.y, physics.velocity.z + step.y);
 		}
+		/* old Code
+		// using our player rotate right and forward, as weel as our input values, create a movement vector called velGoal
+		Vector3 xMove = input.movement.x * transform.right * walkSpeed;
+		Vector3 zMove = input.movement.y * transform.forward * walkSpeed;
+		if (crouching && grounded) { xMove *= crouchSpeedFactor; zMove *= crouchSpeedFactor; }
+		if (input.sprint) { xMove *= sprintFactor; zMove *= sprintFactor; }
+		Vector2 velGoal = new Vector2(xMove.x + zMove.x, xMove.z + zMove.z);
+		Vector2 curVel = new Vector2(physics.velocity.x, physics.velocity.z);
+		//if the change between ourt current velocity and teh velocitry we want to go is smaller than the update we are about to do to it
+		if ((velGoal - curVel).magnitude <= walkAcc * Time.fixedDeltaTime * sprintFactor)
+		{
+			//make our velocity direcyly equal to the goal velcoity. this makes it so that we dont overshoot the velocity
+			physics.velocity = new Vector3(velGoal.x, physics.velocity.y, velGoal.y);
+		}
+		else
+		{
+			//change our velocity based on our walk accelleration value
+			Vector2 step = (velGoal - curVel).normalized * walkAcc * Time.fixedDeltaTime * sprintFactor;
+			physics.velocity = new Vector3(physics.velocity.x + step.x, physics.velocity.y, physics.velocity.z + step.y);
+		}
+		*/
 	}
-	private void Jump() 
+	private void Jump()
 	{
 		switch (jumpState)
 		{
@@ -184,7 +210,7 @@ public class PlayerMovement : MonoBehaviour
 				break;
 		}
 	}
-	private void Crouch() 
+	private void Crouch()
 	{
 		Vector3 scale = transform.localScale;
 		Vector3 position = transform.localPosition;
@@ -255,65 +281,74 @@ public class PlayerMovement : MonoBehaviour
 		transform.localScale = scale;
 		transform.localPosition = position;
 	}
-    private void FixedUpdate()
-    {
+	private void Slide()
+	{
+		switch (slideState)
+		{
+			case 1:
+				sliding = false;
+				slideState = 0;
+				break;
+		}
+	}
+	private void FixedUpdate()
+	{
 		grounded = groundCheck.grounded;
-        CalcSpeed();
 		Move();
 		Jump();
 		Crouch();
-		
-    }
-	void Jumped() 
-	{
-		if (groundCheck.grounded && jumpState == 0) jumpState = 1;
+		Slide();
+		if ((new Vector2(physics.velocity.x, physics.velocity.z)).magnitude > sprintSpeed)
+		{
+			speeding = true;
+			momentum = new Vector3(physics.velocity.x, physics.velocity.y, physics.velocity.z);
+		}
 	}
-	void JumpReleased() 
+	void Boosted()
+	{
+		physics.velocity = physics.velocity + transform.forward * 100;
+	}
+	void Jumped()
+	{
+		if (grounded && jumpState == 0) jumpState = 1;
+	}
+	void JumpReleased()
 	{
 		gravity.force = new Vector3(0, standardGrav, 0);
 		jumpState = 0;
 	}
-	void Crouched() 
+	void Crouched()
 	{
-		if (groundCheck.grounded)
+		if (grounded)
 		{
 			crouchState = 1;
 			crouching = true;
-			if ((physics.velocity.x * physics.velocity.x + physics.velocity.z * physics.velocity.z) >= minSlideSpeed * minSlideSpeed)
+			if ((physics.velocity.x * physics.velocity.x + physics.velocity.z * physics.velocity.z) >= minSlideSpeed * minSlideSpeed && input.sprint)
 			{
+				sliding = true;
 				slideState = 1;
 			}
 		}
-		else 
+		else
 		{
 			crouching = true;
 			crouchState = 4;
 		}
 	}
-    void CrouchReleased()
-    {
-		if (groundCheck.grounded)
+	void CrouchReleased()
+	{
+		if (grounded)
 		{
 			crouchState = 3;
 			crouching = false;
 		}
-		else 
+		else
 		{
 			crouchState = 6;
 			crouching = false;
 		}
-    }
-
-    void Sprint()
-    {
-        sprinting = true;
-    }
-    void SprintReleased()
-    {
-        sprinting = false;
-    }
-
-    void CalcSpeed()
+	}
+	void CalcSpeed()
     {
         //allows for speed multipliers to preserve momentum
             float speedMag = new Vector2(physics.velocity.x, physics.velocity.z).magnitude;
