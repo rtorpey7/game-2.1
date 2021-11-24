@@ -40,7 +40,7 @@ public class GroundChecker : MonoBehaviour
             Normal = contact.normal;
             if (IsFloor(Normal)) { grounded = true; resetGround = false; }
             if (IsWall(Normal)) { walled = true; resetWall = false; }
-            //Debug.DrawRay(contact.point, contact.normal, Color.white);
+            Debug.DrawRay(contact.point, other.impulse, Color.white);
         }
     }
     private void LateUpdate()

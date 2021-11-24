@@ -16,6 +16,7 @@ public class PlayerMovement : MonoBehaviour
     public Transform eyes;
 	//component used to simulate gravity for player.
 	public ConstantForce gravity;
+	public LayerMask WhatIsWall;
 	[Header("Movement")]
 	//velocity of the players walk
 	public float walkSpeed;
@@ -23,6 +24,12 @@ public class PlayerMovement : MonoBehaviour
     public float sprintFactor;
 	//amount of time it takes to get to 100% speed while walking
 	public float accTime;
+	//percent of acc to use when in the air
+	public float airAccFactor;
+	//percent of acc to use when crouching in the air
+	public float crouchAirAccFactor;
+	//size of block to increase acc past sprint speed
+	public float speedAccBlockSize = 10;
 	//acceleration value for walking
 	private float walkAcc;
 	//acceleration value for sprinting
@@ -31,6 +38,12 @@ public class PlayerMovement : MonoBehaviour
 	private float sprintSpeed;
     //constant to multiply sprint speed by to keep momentum
     private float speedMultiplier;
+	//vector used to store all impulses on the player from frictionless walls
+	private Vector2 Impulse;
+	//vector used to store velocity between updates
+	private Vector2 oldVel;
+	//boolean of whether or not we have intersected a frictionless wall.
+	private bool wall;
 	[Header("Jump Values")]
 	//height attained when jumping
 	public float jumpHeight;
@@ -141,7 +154,12 @@ public class PlayerMovement : MonoBehaviour
 		Vector2 curVel = new Vector2(physics.velocity.x, physics.velocity.z);
 		Vector3 moveTemp = input.movement.x * transform.right + input.movement.y * transform.forward;
 		Vector2 move = (new Vector2(moveTemp.x, moveTemp.z)).normalized;
-
+		if (wall)
+		{
+			float change = Vector2.Dot(move, curVel) / curVel.magnitude;
+			change /= Mathf.Abs(change);
+			move = curVel.normalized * change;
+		}
 		float maxVel = walkSpeed;
 		if (crouching && grounded) maxVel *= crouchSpeedFactor;
 		if (input.sprint) maxVel *= sprintFactor;
@@ -151,15 +169,18 @@ public class PlayerMovement : MonoBehaviour
 			//We only keep our momentum if we are traveling in the direction of our momentum.
 			if (Vector3.Dot(move, curVel) / curVel.magnitude > 0) 
 			{
+				//maxVel = Vector2.Scale(move, new  Vector2(Mathf.Abs(curVel.x), Mathf.Abs(curVel.y)) / sprintSpeed).magnitude * sprintSpeed;
 				maxVel = Vector3.Dot(move.normalized * curVel.magnitude, curVel) / curVel.magnitude;
 			}
 		}
 		float acceleration = walkAcc;
 		if (input.sprint && !crouching) acceleration = sprintAcc;
+		if (!grounded) acceleration *= airAccFactor;
+		if(crouching && !grounded) acceleration *= crouchAirAccFactor;
 		//if we have momentum, acceleration is calculated differently
-		if (speeding)
+		if (speeding && grounded)
 		{
-			
+			acceleration *= (int)((curVel.magnitude - sprintSpeed) / speedAccBlockSize) + 1;
 		}
 		move *= maxVel;
 		Vector2 step = move - curVel;
@@ -290,6 +311,15 @@ public class PlayerMovement : MonoBehaviour
 	}
 	void FixedUpdate()
 	{
+		if (Impulse.magnitude > 0) 
+		{
+			Debug.Log("hey"); 
+		}
+		Vector2 curVel = new Vector2(physics.velocity.x, physics.velocity.z);
+		float natVelLoss = ((Impulse / physics.mass) + oldVel).magnitude - curVel.magnitude;
+		Vector2  newVel = (Impulse / physics.mass + oldVel).normalized * (oldVel.magnitude - natVelLoss);
+		physics.velocity = new Vector3(newVel.x, physics.velocity.y, newVel.y);
+		wall = Impulse.magnitude > 0;
 		grounded = groundCheck.grounded;
 		boost();
 		Move();
@@ -301,6 +331,8 @@ public class PlayerMovement : MonoBehaviour
 		{
 			speeding = true;
 		}
+		Impulse = new Vector2();
+		oldVel = new Vector2(physics.velocity.x, physics.velocity.z);
 	}
 	void Boosted()
 	{
@@ -314,6 +346,8 @@ public class PlayerMovement : MonoBehaviour
 	void Jumped()
 	{
 		if (grounded && jumpState == 0) jumpState = 1;
+		if (!grounded && jumpState == 0 && physics.velocity.y <= 0) { jumpState = 2; }
+		if (!grounded && jumpState == 0 && physics.velocity.y > 0) { gravity.force = new Vector3(0, upGrav, 0); jumpState = 2; }
 	}
 	void JumpReleased()
 	{
@@ -362,4 +396,28 @@ public class PlayerMovement : MonoBehaviour
             }
         speedMultiplier = 1;
     }
+	private bool IsFloor(Vector3 v)
+	{
+		return Vector3.Angle(transform.up, v) < groundCheck.maxIncline;
+	}
+	//returns whether a surface is recognized as a wall. Input normal vector of surface
+	private bool IsWall(Vector3 v)
+	{
+		return Vector3.Angle(transform.up, v) >= groundCheck.maxIncline;
+	}
+	private void OnCollisionStay(Collision other)
+	{
+		//Make sure we are only checking for walkable layers
+		int layer = other.gameObject.layer;
+		if (WhatIsWall.value != (WhatIsWall.value | (1 << layer))) return;
+		if (other.gameObject.tag != "Frictionless") return;
+		Impulse += new Vector2(other.impulse.x, other.impulse.z);
+	}
+    private void OnCollisionEnter(Collision other)
+    {
+		int layer = other.gameObject.layer;
+		if (WhatIsWall.value != (WhatIsWall.value | (1 << layer))) return;
+		if (other.gameObject.tag != "Frictionless") return;
+		Impulse += new Vector2(other.impulse.x, other.impulse.z);
+	}
 }
